@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-house-heart"></i> ยินดีต้อนรับสู่ระบบบันทึกงานซ่อม
+            </div>
+            <div class="card-body text-center py-5">
+                <h4 class="text-muted">เริ่มต้นใช้งานตามลำดับด้านล่าง</h4>
+                <div class="alert alert-info text-start mt-4 mx-auto" style="max-width: 760px;">
+                    <ol class="mb-0 ps-3">
+                        <li>เข้า <strong>Admin</strong></li>
+                        <li>ไปที่เมนู <strong>บันทึกอาคาร</strong></li>
+                        <li>เพิ่มชื่ออาคาร + จำนวนชิ้นงานทั้งหมด</li>
+                        <li>จากนั้นเวลาไปหน้า <strong>เพิ่มบันทึกงานซ่อม</strong> จะเลือกอาคารได้จาก dropdown</li>
+                    </ol>
+                </div>
+                <div class="mt-4 d-flex flex-wrap justify-content-center gap-2">
+                    {% if not has_buildings %}
+                    <a href="{{ url_for('admin_login') }}" class="btn btn-warning btn-lg">
+                        <i class="bi bi-gear"></i> เข้า Admin เพื่อเพิ่มอาคาร
+                    </a>
+                    {% else %}
+                    {% if session.get('admin_logged_in') %}
+                    <a href="{{ url_for('admin_buildings') }}" class="btn btn-warning btn-lg">
+                        <i class="bi bi-buildings"></i> จัดการอาคาร
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('admin_login') }}" class="btn btn-warning btn-lg">
+                        <i class="bi bi-gear"></i> เข้า Admin
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('add') }}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-plus-circle"></i> เพิ่มบันทึกงานซ่อม
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('list_logs') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-list-check"></i> ดูรายการ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

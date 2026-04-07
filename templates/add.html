@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-plus-circle"></i> เพิ่มบันทึกงานซ่อม
+            </div>
+            <div class="card-body">
+                {% if building_options %}
+                <div class="alert alert-success">
+                    เลือกอาคารจาก dropdown ได้เลย ถ้ายังไม่มีอาคาร ให้ไปเพิ่มที่เมนู <strong>บันทึกอาคาร</strong> ในหน้า Admin ก่อน
+                </div>
+                {% else %}
+                <div class="alert alert-warning d-flex flex-column gap-2">
+                    <div>ยังไม่มีข้อมูลอาคาร กรุณาเข้า <strong>Admin</strong> และเพิ่มชื่ออาคาร + จำนวนชิ้นงานทั้งหมดก่อน</div>
+                    <div>
+                        <a href="{{ url_for('admin_login') }}" class="btn btn-warning btn-sm">
+                            <i class="bi bi-gear"></i> ไปหน้า Admin
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+                <form method="post">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold"><i class="bi bi-building"></i> อาคาร</label>
+                            <select class="form-select" name="building_id" required {% if not building_options %}disabled{% endif %}>
+                                <option value="">-- เลือกอาคาร --</option>
+                                {% for building in building_options %}
+                                <option value="{{ building.id }}">{{ building.name }} — จำนวนชิ้นงานทั้งหมด {{ building.total_items }} ชิ้น</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold"><i class="bi bi-calendar"></i> วันที่</label>
+                            <input type="date" class="form-control" name="date" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold"><i class="bi bi-box"></i> ชื่อชิ้นงาน</label>
+                            <input type="text" class="form-control" name="item_name" required placeholder="กรอกชื่อชิ้นงาน">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold"><i class="bi bi-geo-alt"></i> โซน</label>
+                            <input type="text" class="form-control" name="zone" required placeholder="กรอกโซน">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="bi bi-exclamation-triangle"></i> อาการเสีย</label>
+                        <textarea class="form-control" name="fault_desc" rows="3" required placeholder="อธิบายอาการเสีย"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="bi bi-check-circle"></i> สถานะ</label>
+                        <select class="form-select" name="status" required>
+                            <option value="fixable">✔ ซ่อมได้</option>
+                            <option value="unfixable">✘ ซ่อมไม่ได้</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="bi bi-journal-text"></i> บันทึกอื่น ๆ</label>
+                        <textarea class="form-control" name="notes" rows="2" placeholder="บันทึกเพิ่มเติม (ถ้ามี)"></textarea>
+                    </div>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary btn-lg" {% if not building_options %}disabled{% endif %}>
+                            <i class="bi bi-save"></i> บันทึก
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

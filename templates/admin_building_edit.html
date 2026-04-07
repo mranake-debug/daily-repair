@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-pencil-square"></i> แก้ไขข้อมูลอาคาร
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="bi bi-buildings"></i> ชื่ออาคาร</label>
+                        <input type="text" class="form-control" name="name" value="{{ building.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="bi bi-box-seam"></i> จำนวนชิ้นงานทั้งหมด</label>
+                        <input type="number" class="form-control" name="total_items" min="0" value="{{ building.total_items }}" required>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> บันทึก
+                        </button>
+                        <a href="{{ url_for('admin_buildings') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> ยกเลิก
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

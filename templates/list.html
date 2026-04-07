@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span><i class="bi bi-list-check"></i> รายการบันทึกงานซ่อมทั้งหมด</span>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('export_logs_excel', building=selected_building, search=search_text, start_date=start_date, end_date=end_date) }}" class="btn btn-success btn-sm">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
+           <!-- <a href="{{ url_for('export_logs_pdf', building=selected_building, search=search_text, start_date=start_date, end_date=end_date) }}" class="btn btn-danger btn-sm">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
+	-->
+        </div>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3 mb-4 p-3 bg-light rounded">
+            <div class="col-md-3">
+                <label class="form-label fw-bold"><i class="bi bi-search"></i> ค้นหารายการ</label>
+                <input type="text" class="form-control" name="search" value="{{ search_text }}" placeholder="ชื่อชิ้นงาน / โซน / อาการเสีย">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold"><i class="bi bi-building"></i> อาคาร</label>
+                <select name="building" class="form-select">
+                    <option value="">-- ทั้งหมด --</option>
+                    {% for building in buildings %}
+                    <option value="{{ building.name }}" {% if selected_building == building.name %}selected{% endif %}>{{ building.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold"><i class="bi bi-calendar"></i> จากวันที่</label>
+                <input type="date" class="form-control" name="start_date" value="{{ start_date }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold"><i class="bi bi-calendar"></i> ถึงวันที่</label>
+                <input type="date" class="form-control" name="end_date" value="{{ end_date }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold"><i class="bi bi-check2-square"></i> สถานะงาน</label>
+                <select name="job_status" class="form-select">
+                    <option value="">-- ทั้งหมด --</option>
+                    <option value="open" {% if job_status == 'open' %}selected{% endif %}>งานค้างซ่อมไม่ได้</option>
+                    <option value="closed" {% if job_status == 'closed' %}selected{% endif %}>ปิดงานแล้ว (จากซ่อมไม่ได้)</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold"><i class="bi bi-funnel"></i> สถานะครั้งแรก</label>
+                <select name="initial_status" class="form-select">
+                    <option value="">-- ทั้งหมด --</option>
+                    <option value="unfixable" {% if initial_status == 'unfixable' %}selected{% endif %}>เคยซ่อมไม่ได้</option>
+                    <option value="fixable" {% if initial_status == 'fixable' %}selected{% endif %}>ซ่อมได้ตั้งแต่แรก</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> ค้นหา
+                </button>
+                <a href="{{ url_for('list_logs') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </a>
+            </div>
+        </form>
+        {% if logs %}
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>อาคาร</th>
+                        <th>วันที่</th>
+                        <th>ชื่อชิ้นงาน</th>
+                        <th>จำนวน</th>
+                        <th>โซน</th>
+                        <th>อาการเสีย</th>
+                        <th>สถานะครั้งแรก</th>
+                        <th>ปิดงาน</th>
+                        <th>ดูงาน</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><span class="badge bg-secondary">{{ log.building }}</span></td>
+                        <td>{{ log.date }}</td>
+                        <td>{{ log.item_name }}</td>
+                        <td>{{ log.quantity }}</td>
+                        <td>{{ log.zone }}</td>
+                        <td>{{ log.fault_desc }}</td>
+                        <td>
+                            {% if log.status == 'fixable' %}
+                            <span class="badge bg-success">✔ ซ่อมได้</span>
+                            {% else %}
+                            <span class="badge bg-danger">✘ ซ่อมไม่ได้</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if log.job_status == 'closed' %}
+                                {% if log.final_result == 'fixed' %}
+                                    {% if log.status == 'unfixable' %}
+                                    <span class="badge bg-warning text-dark" data-bs-toggle="tooltip" data-bs-placement="top" title="เคยซ่อมไม่ได้ แต่ปิดงานว่าซ่อมเสร็จ">✘ → ✔ ซ่อมเสร็จ</span>
+                                    {% else %}
+                                    <span class="badge bg-success">✔ ซ่อมเสร็จ</span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="badge bg-warning text-dark">✘ ปิดไม่ได้</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-warning text-dark">งานค้างซ่อมไม่ได้</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('admin_timeline', id=log.id) }}" class="btn btn-sm btn-dark">
+                                <i class="bi bi-clock-history"></i> Timeline
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mt-3">
+            <p class="text-muted mb-0">พบทั้งหมด {{ total_logs }} รายการ</p>
+            {% if total_pages > 1 %}
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('list_logs', page=current_page-1, building=selected_building, search=search_text, start_date=start_date, end_date=end_date, job_status=job_status, initial_status=initial_status) }}">ก่อนหน้า</a>
+                    </li>
+                    {% for page_number in page_numbers %}
+                    <li class="page-item {% if page_number == current_page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('list_logs', page=page_number, building=selected_building, search=search_text, start_date=start_date, end_date=end_date, job_status=job_status, initial_status=initial_status) }}">{{ page_number }}</a>
+                    </li>
+                    {% endfor %}
+                    <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('list_logs', page=current_page+1, building=selected_building, search=search_text, start_date=start_date, end_date=end_date, job_status=job_status, initial_status=initial_status) }}">ถัดไป</a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-inbox fs-1"></i>
+            <p class="mt-2">ยังไม่มีข้อมูล</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

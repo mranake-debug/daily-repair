@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+    <div class="card-header bg-warning">
+        <div class="d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-gear"></i> จัดการข้อมูล (Admin)</span>
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-sm btn-outline-dark">
+                <i class="bi bi-box-arrow-right"></i> ออกจากระบบ
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <style>
+            .admin-pill-nav .btn {
+                border-radius: 999px;
+                font-weight: 600;
+                padding: 0.55rem 1rem;
+            }
+            .admin-quick-link {
+                border-radius: 999px;
+            }
+            .admin-status-card {
+                border-left: 5px solid rgba(255,255,255,0.35);
+            }
+        </style>
+        <!-- Stats Summary -->
+        <div class="row mb-4 g-3">
+            <div class="col-md-2">
+                <div class="card bg-primary text-white h-100 admin-status-card">
+                    <div class="card-body text-center">
+                        <h5>จำนวนอาคาร</h5>
+                        <h2>{{ buildings|length }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card bg-success text-white h-100 admin-status-card">
+                    <div class="card-body text-center">
+                        <h5>จำนวนงานซ่อม</h5>
+                        <h2>{{ total_logs }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card bg-info text-white h-100 admin-status-card">
+                    <div class="card-body text-center">
+                        <h5>ซ่อมได้</h5>
+                        <h2>{{ fixable_count }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card bg-danger text-white h-100 admin-status-card">
+                    <div class="card-body text-center">
+                        <h5>ซ่อมไม่ได้</h5>
+                        <h2>{{ unfixable_count }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card bg-warning text-dark h-100 admin-status-card">
+                    <div class="card-body text-center">
+                        <h5>งานค้างซ่อมไม่ได้</h5>
+                        <h2>{{ open_count }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card bg-secondary text-white h-100 admin-status-card">
+                    <div class="card-body text-center">
+                        <h5>ปิดงานแล้ว</h5>
+                        <h2>{{ closed_count }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card bg-light text-dark h-100 border admin-status-card">
+                    <div class="card-body text-center">
+                        <h5>ซ่อมได้ ไม่ต้องติดตาม</h5>
+                        <h2>{{ normal_fixed_count }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3 d-flex flex-wrap gap-2 admin-pill-nav">
+            <a href="{{ url_for('admin_dashboard', admin_view='tracked', building=selected_building, search=search_text, start_date=start_date, end_date=end_date, job_status=job_status, initial_status=initial_status) }}" class="btn {% if admin_view == 'tracked' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                <i class="bi bi-exclamation-triangle"></i> งานติดตาม
+                <span class="badge bg-dark ms-1">{{ tracked_tab_count }}</span>
+            </a>
+            <a href="{{ url_for('admin_dashboard', admin_view='fixable', building=selected_building, search=search_text, start_date=start_date, end_date=end_date, job_status=job_status, initial_status=initial_status) }}" class="btn {% if admin_view == 'fixable' %}btn-success{% else %}btn-outline-success{% endif %}">
+                <i class="bi bi-check-circle"></i> งานที่ซ่อมได้
+                <span class="badge bg-dark ms-1">{{ fixable_tab_count }}</span>
+            </a>
+            <a href="{{ url_for('admin_dashboard', admin_view='all', building=selected_building, search=search_text, start_date=start_date, end_date=end_date, job_status=job_status, initial_status=initial_status) }}" class="btn {% if admin_view == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <i class="bi bi-collection"></i> งานทั้งหมด
+                <span class="badge bg-dark ms-1">{{ all_tab_count }}</span>
+            </a>
+        </div>
+
+        <div class="mb-4 d-flex flex-wrap gap-2">
+            <a href="{{ url_for('admin_dashboard', admin_view='tracked', start_date=start_date, end_date=end_date, building=selected_building, search=search_text, job_status='open', initial_status='unfixable') }}" class="btn btn-outline-danger admin-quick-link">
+                <i class="bi bi-clock-history"></i> งานค้างวันนี้ <span class="badge bg-danger ms-1">{{ today_open_count }}</span>
+            </a>
+            <a href="{{ url_for('admin_dashboard', admin_view='all', start_date=start_date, end_date=end_date, building=selected_building, search=search_text, job_status='closed', initial_status='') }}" class="btn btn-outline-secondary admin-quick-link">
+                <i class="bi bi-check2-all"></i> ปิดงานล่าสุด <span class="badge bg-secondary ms-1">{{ recent_closed_count }}</span>
+            </a>
+        </div>
+
+        <!-- Filter Form -->
+        <form method="get" action="{{ url_for('admin_dashboard') }}" class="row g-3 mb-4 p-3 bg-light rounded">
++            <input type="hidden" name="admin_view" value="{{ admin_view }}">
+            <div class="col-md-3">
+                <label class="form-label fw-bold"><i class="bi bi-search"></i> ค้นหารายการ</label>
+                <input type="text" class="form-control" name="search" value="{{ search_text }}" placeholder="ชื่อชิ้นงาน / โซน / อาการเสีย">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold"><i class="bi bi-building"></i> อาคาร</label>
+                <select name="building" class="form-select">
+                    <option value="">-- ทั้งหมด --</option>
+                    {% for b in buildings %}
+                    <option value="{{ b.name }}" {% if selected_building == b.name %}selected{% endif %}>{{ b.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold"><i class="bi bi-calendar"></i> จากวันที่</label>
+                <input type="date" class="form-control" name="start_date" value="{{ start_date }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold"><i class="bi bi-calendar"></i> ถึงวันที่</label>
+                <input type="date" class="form-control" name="end_date" value="{{ end_date }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold"><i class="bi bi-check2-square"></i> สถานะงาน</label>
+                <select name="job_status" class="form-select">
+                    <option value="">-- ทั้งหมด --</option>
+                    <option value="open" {% if job_status == 'open' %}selected{% endif %}>งานค้างซ่อมไม่ได้</option>
+                    <option value="closed" {% if job_status == 'closed' %}selected{% endif %}>ปิดงานแล้ว (จากซ่อมไม่ได้)</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold"><i class="bi bi-funnel"></i> สถานะครั้งแรก</label>
+                <select name="initial_status" class="form-select">
+                    <option value="">-- ทั้งหมด --</option>
+                    <option value="unfixable" {% if initial_status == 'unfixable' %}selected{% endif %}>เคยซ่อมไม่ได้</option>
+                    <option value="fixable" {% if initial_status == 'fixable' %}selected{% endif %}>ซ่อมได้ตั้งแต่แรก</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold"><i class="bi bi-eye"></i> มุมมอง</label>
+                <select name="admin_view" class="form-select">
+                    <option value="tracked" {% if admin_view == 'tracked' %}selected{% endif %}>งานติดตาม</option>
+                    <option value="all" {% if admin_view == 'all' %}selected{% endif %}>งานทั้งหมด</option>
+                    <option value="fixable" {% if admin_view == 'fixable' %}selected{% endif %}>งานที่ซ่อมได้</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold"><i class="bi bi-sort-down"></i> เรียงตาม</label>
+                <select name="sort_by" class="form-select">
+                    <option value="date_desc" {% if sort_by == 'date_desc' %}selected{% endif %}>วันที่ล่าสุด</option>
+                    <option value="date_asc" {% if sort_by == 'date_asc' %}selected{% endif %}>วันที่เก่าสุด</option>
+                    <option value="building_asc" {% if sort_by == 'building_asc' %}selected{% endif %}>อาคาร A-Z</option>
+                    <option value="building_desc" {% if sort_by == 'building_desc' %}selected{% endif %}>อาคาร Z-A</option>
+                    <option value="status_asc" {% if sort_by == 'status_asc' %}selected{% endif %}>สถานะ A-Z</option>
+                    <option value="status_desc" {% if sort_by == 'status_desc' %}selected{% endif %}>สถานะ Z-A</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold"><i class="bi bi-hourglass-split"></i> งานค้างเกิน (วัน)</label>
+                <input type="number" min="1" class="form-control" name="overdue_days" value="{{ overdue_days }}" placeholder="เช่น 7">
+            </div>
+            <div class="col-md-2 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> ค้นหา
+                </button>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </a>
+            </div>
+        </form>
+
+        {% if admin_view == 'all' %}
+            {% set display_logs = logs %}
+        {% elif admin_view == 'fixable' %}
+            {% set display_logs = logs | selectattr('status', 'equalto', 'fixable') | list %}
+        {% else %}
+            {% set display_logs = logs | selectattr('status', 'equalto', 'unfixable') | list %}
+        {% endif %}
+        {% if display_logs %}
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>อาคาร</th>
+                        <th>วันที่</th>
+                        <th>ชื่อชิ้นงาน</th>
+                        <th>จำนวน</th>
+                        <th>โซน</th>
+                        <th>อาการเสีย</th>
+                        <th>สถานะครั้งแรก</th>
+                        <th>ปิดงาน</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for l in display_logs %}
+                    <tr>
+                        <td><span class="badge bg-secondary">{{ l.building }}</span></td>
+                        <td>{{ l.date }}</td>
+                        <td>{{ l.item_name }}</td>
+                        <td>{{ l.quantity }}</td>
+                        <td>{{ l.zone }}</td>
+                        <td>{{ l.fault_desc }}</td>
+                        <td>
+                            {% if l.status == 'fixable' %}
+                            <span class="badge bg-success">✔ ซ่อมได้</span>
+                            {% else %}
+                            <span class="badge bg-danger">✘ ซ่อมไม่ได้</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if l.job_status == 'closed' %}
+                                {% if l.final_result == 'fixed' %}
+                                    {% if l.status == 'unfixable' %}
+                                    <span class="badge bg-warning text-dark" data-bs-toggle="tooltip" data-bs-placement="top" title="เคยซ่อมไม่ได้ แต่ปิดงานว่าซ่อมเสร็จ">✘ → ✔ ซ่อมเสร็จ</span>
+                                    {% else %}
+                                    <span class="badge bg-success">✔ ซ่อมเสร็จ</span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="badge bg-warning text-dark">✘ ปิดไม่ได้</span>
+                                {% endif %}
+                                <div class="small text-muted mt-1">{{ l.closed_date or '-' }}</div>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">งานค้าง</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('admin_timeline', id=l.id) }}" class="btn btn-sm btn-dark mb-1">
+                                <i class="bi bi-clock-history"></i> Timeline
+                            </a>
+                            <a href="{{ url_for('admin_edit', id=l.id) }}" class="btn btn-sm btn-primary mb-1">
+                                <i class="bi bi-pencil"></i> แก้ไข
+                            </a>
+                            {% if l.job_status == 'open' %}
+                            <a href="{{ url_for('admin_close_job', id=l.id) }}" class="btn btn-sm btn-warning mb-1">
+                                <i class="bi bi-check2-square"></i> ปิดงาน
+                            </a>
+                            {% else %}
+                            <form method="post" action="{{ url_for('admin_reopen_job', id=l.id) }}" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-secondary mb-1">
+                                    <i class="bi bi-arrow-counterclockwise"></i> เปิดใหม่
+                                </button>
+                            </form>
+                            {% endif %}
+                            <form method="post" action="{{ url_for('admin_delete', id=l.id) }}" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-danger mb-1" onclick="return confirm('ยืนยันการลบ?')">
+                                    <i class="bi bi-trash"></i> ลบ
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mt-3">
+            <p class="text-muted mb-0">พบ {{ display_logs|length }} รายการ จากผลค้นหา {{ total_logs }} รายการ</p>
+            {% if total_pages > 1 %}
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin_dashboard', page=current_page-1, building=selected_building, search=search_text, start_date=start_date, end_date=end_date) }}">ก่อนหน้า</a>
+                    </li>
+                    {% for page_number in page_numbers %}
+                    <li class="page-item {% if page_number == current_page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin_dashboard', page=page_number, building=selected_building, search=search_text, start_date=start_date, end_date=end_date) }}">{{ page_number }}</a>
+                    </li>
+                    {% endfor %}
+                    <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin_dashboard', page=current_page+1, building=selected_building, search=search_text, start_date=start_date, end_date=end_date) }}">ถัดไป</a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-inbox fs-1"></i>
+            <p class="mt-2">ไม่พบข้อมูลตามมุมมองที่เลือก</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

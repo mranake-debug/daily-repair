@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-clock-history"></i> Timeline งานซ่อม</span>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-arrow-left"></i> กลับหน้า Admin
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3"><strong>อาคาร:</strong><br>{{ log.building }}</div>
+                    <div class="col-md-3"><strong>วันที่บันทึก:</strong><br>{{ log.date }}</div>
+                    <div class="col-md-3"><strong>ชื่อชิ้นงาน:</strong><br>{{ log.item_name }}</div>
+                    <div class="col-md-3"><strong>โซน:</strong><br>{{ log.zone }}</div>
+                </div>
+
+                <style>
+                    .timeline-wrap {
+                        position: relative;
+                        margin-left: 1.2rem;
+                        padding-left: 1.5rem;
+                        border-left: 3px solid #dee2e6;
+                    }
+                    .timeline-node {
+                        position: absolute;
+                        left: -0.6rem;
+                        width: 1rem;
+                        height: 1rem;
+                        border-radius: 50%;
+                        background: #0d6efd;
+                        border: 2px solid #fff;
+                        box-shadow: 0 0 0 2px rgba(13,110,253,.15);
+                        margin-top: .45rem;
+                    }
+                </style>
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <div class="timeline-wrap">
+                            {% for item in timeline_items %}
+                            <div class="position-relative d-flex gap-3 mb-4 align-items-start">
+                                <span class="timeline-node bg-{{ item.badge_class }}"></span>
+                                <div style="min-width: 120px;">
+                                    <span class="badge bg-{{ item.badge_class }} px-3 py-2">{{ item.date }}</span>
+                                </div>
+                                <div class="flex-grow-1 border rounded p-3 bg-light shadow-sm">
+                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                        <div>
+                                            <div class="fw-bold mb-1">{{ item.title }}</div>
+                                            <div class="text-muted">{{ item.detail }}</div>
+                                        </div>
+                                        {% if item.event_type == 'note' %}
+                                        <div class="text-end">
+                                            <button class="btn btn-sm btn-outline-primary mb-1" type="button" data-bs-toggle="collapse" data-bs-target="#edit-event-{{ item.id }}">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <form method="post" action="{{ url_for('admin_timeline_event_delete', id=log.id, event_id=item.id) }}" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger mb-1" onclick="return confirm('ยืนยันการลบบันทึกนี้?')">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% if item.event_type == 'note' %}
+                                    <div class="collapse mt-3" id="edit-event-{{ item.id }}">
+                                        <form method="post" action="{{ url_for('admin_timeline_event_edit', id=log.id, event_id=item.id) }}" class="border-top pt-3">
+                                            <div class="row g-2">
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-bold">วันที่</label>
+                                                    <input type="date" name="note_date" class="form-control form-control-sm" value="{{ item.date }}" required>
+                                                </div>
+                                                <div class="col-md-8">
+                                                    <label class="form-label small fw-bold">หัวข้อ</label>
+                                                    <input type="text" name="note_title" class="form-control form-control-sm" value="{{ item.title }}">
+                                                </div>
+                                                <div class="col-12">
+                                                    <label class="form-label small fw-bold">รายละเอียด</label>
+                                                    <textarea name="note_detail" class="form-control form-control-sm" rows="3" required>{{ item.detail }}</textarea>
+                                                </div>
+                                                <div class="col-12 text-end">
+                                                    <button type="submit" class="btn btn-sm btn-primary">
+                                                        <i class="bi bi-save"></i> บันทึกการแก้ไข
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-primary text-white">
+                                <i class="bi bi-journal-plus"></i> เพิ่มบันทึกติดตาม
+                            </div>
+                            <div class="card-body">
+                                <form method="post" action="{{ url_for('admin_timeline_note', id=log.id) }}">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">วันที่บันทึก</label>
+                                        <input type="date" name="note_date" class="form-control" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">หัวข้อ</label>
+                                        <input type="text" name="note_title" class="form-control" placeholder="เช่น ติดตามอะไหล่ / โทรแจ้งผู้ใช้งาน">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">รายละเอียด</label>
+                                        <textarea name="note_detail" class="form-control" rows="4" required placeholder="บันทึกความคืบหน้าของงาน"></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-save"></i> เพิ่มลง timeline
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <a href="{{ url_for('admin_edit', id=log.id) }}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> แก้ไขงาน
+                    </a>
+                    {% if log.status == 'unfixable' and log.job_status == 'open' %}
+                    <a href="{{ url_for('admin_close_job', id=log.id) }}" class="btn btn-warning">
+                        <i class="bi bi-check2-square"></i> ปิดงาน
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

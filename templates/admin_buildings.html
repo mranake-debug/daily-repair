@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-building-add"></i> เพิ่มอาคาร
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <ol class="mb-0 ps-3">
+                        <li>กรอกชื่ออาคาร</li>
+                        <li>กรอกจำนวนชิ้นงานทั้งหมด</li>
+                        <li>กดปุ่ม <strong>บันทึกอาคาร</strong></li>
+                        <li>จากนั้นไปหน้า <strong>เพิ่มบันทึกงานซ่อม</strong> เพื่อเลือกอาคารจาก dropdown</li>
+                    </ol>
+                </div>
+                <form method="post">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="bi bi-buildings"></i> ชื่ออาคาร</label>
+                        <input type="text" class="form-control" name="name" required placeholder="เช่น อาคาร A">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="bi bi-box-seam"></i> จำนวนชิ้นงานทั้งหมด</label>
+                        <input type="number" class="form-control" name="total_items" min="0" required value="0" placeholder="0">
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> บันทึกอาคาร
+                        </button>
+                        <a href="{{ url_for('add') }}" class="btn btn-outline-success">
+                            <i class="bi bi-plus-circle"></i> ไปหน้าเพิ่มบันทึกงานซ่อม
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span><i class="bi bi-buildings"></i> รายชื่ออาคาร</span>
+                <form method="get" class="d-flex gap-2">
+                    <input type="text" class="form-control form-control-sm" name="search" value="{{ search_text }}" placeholder="ค้นหาชื่ออาคาร">
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search"></i></button>
+                    <a href="{{ url_for('admin_buildings') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i></a>
+                </form>
+            </div>
+            <div class="card-body">
+                {% if building_list %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>ชื่ออาคาร</th>
+                                <th>จำนวนชิ้นงานทั้งหมด</th>
+                                <th>รายการซ่อมที่ใช้อาคารนี้</th>
+                                <th class="text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for building in building_list %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td><span class="badge bg-secondary fs-6">{{ building.name }}</span></td>
+                                <td>{{ building.total_items }}</td>
+                                <td>{{ building.repair_logs_count if building.repair_logs_count is defined else '-' }}</td>
+                                <td class="text-center">
+                                    <a href="{{ url_for('admin_building_edit', id=building.id) }}" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-pencil"></i> แก้ไข
+                                    </a>
+                                    <form method="post" action="{{ url_for('admin_building_delete', id=building.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('ยืนยันการลบอาคารนี้?')">
+                                            <i class="bi bi-trash"></i> ลบ
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mt-3">
+                    <p class="text-muted mb-0">พบทั้งหมด {{ total_buildings }} อาคาร</p>
+                    {% if total_pages > 1 %}
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('admin_buildings', page=current_page-1, search=search_text) }}">ก่อนหน้า</a>
+                            </li>
+                            {% for page_number in page_numbers %}
+                            <li class="page-item {% if page_number == current_page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('admin_buildings', page=page_number, search=search_text) }}">{{ page_number }}</a>
+                            </li>
+                            {% endfor %}
+                            <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('admin_buildings', page=current_page+1, search=search_text) }}">ถัดไป</a>
+                            </li>
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-buildings fs-1"></i>
+                    <p class="mt-2">ยังไม่มีรายการอาคาร</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span><i class="bi bi-graph-up"></i> สรุปรายงานงานซ่อม</span>
+        <button type="button" class="btn btn-danger btn-sm" onclick="submitSummaryPdf()">
+            <i class="bi bi-file-earmark-pdf"></i> Export PDF
+        </button>
+    </div>
+    <div class="card-body">
+        <form method="post" action="{{ url_for('summary_report') }}" class="row g-3 mb-4 p-3 bg-light rounded" id="summaryFilterForm">
+            <div class="col-md-3">
+                <label class="form-label fw-bold"><i class="bi bi-calendar"></i> ปี</label>
+                <select name="year" class="form-select">
+                    {% for y in range(2020, 2031) %}
+                    <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold"><i class="bi bi-calendar-month"></i> เดือน</label>
+                <select name="month" class="form-select">
+                    <option value="">-- ทั้งหมด --</option>
+                    {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {% if month == m|string %}selected{% endif %}>
+                        {% if m == 1 %}มกราคม{% elif m == 2 %}กุมภาพันธ์{% elif m == 3 %}มีนาคม{% elif m == 4 %}เมษายน{% elif m == 5 %}พฤษภาคม{% elif m == 6 %}มิถุนายน{% elif m == 7 %}กรกฎาคม{% elif m == 8 %}สิงหาคม{% elif m == 9 %}กันยายน{% elif m == 10 %}ตุลาคม{% elif m == 11 %}พฤศจิกายน{% elif m == 12 %}ธันวาคม{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold"><i class="bi bi-building"></i> อาคาร</label>
+                <select name="building" class="form-select">
+                    <option value="">-- ทั้งหมด --</option>
+                    {% for b in buildings %}
+                    <option value="{{ b.name }}" {% if building == b.name %}selected{% endif %}>{{ b.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold"><i class="bi bi-check2-square"></i> สถานะงาน</label>
+                <select name="summary_job_status" class="form-select">
+                    <option value="">-- ทั้งหมด --</option>
+                    <option value="open" {% if summary_job_status == 'open' %}selected{% endif %}>งานค้างซ่อมไม่ได้</option>
+                    <option value="closed" {% if summary_job_status == 'closed' %}selected{% endif %}>ปิดงานแล้ว (จากซ่อมไม่ได้)</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold"><i class="bi bi-building"></i> ชื่อหน่วยงาน</label>
+                <input type="text" class="form-control" name="organization_name" value="{{ organization_name }}" placeholder="เช่น งานซ่อมบำรุง อาคารสถานที่">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold"><i class="bi bi-person"></i> ผู้จัดทำรายงาน</label>
+                <input type="text" class="form-control" name="report_prepared_by" value="{{ report_prepared_by }}" placeholder="ชื่อผู้จัดทำรายงาน">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold"><i class="bi bi-person-check"></i> ผู้อนุมัติ/ผู้รับรอง</label>
+                <input type="text" class="form-control" name="report_approved_by" value="{{ report_approved_by }}" placeholder="ชื่อผู้อนุมัติหรือผู้รับรอง">
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="include_letterhead" id="include_letterhead" value="1" {% if include_letterhead %}checked{% endif %}>
+                    <label class="form-check-label fw-bold" for="include_letterhead">
+                        แสดงชื่อหน่วยงาน/หัวกระดาษ
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-12 d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i> ดูรายงาน
+                </button>
+            </div>
+        </form>
+
+        {% if include_letterhead and organization_name %}
+        <div class="text-center mb-4">
+            <h4 class="mb-1">{{ organization_name }}</h4>
+            <div class="text-muted">รายงานสรุปงานซ่อม วันที่ {{ thai_generated_date }}</div>
+        </div>
+        {% endif %}
+
+        <div class="row mb-4 g-3">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white h-100">
+                    <div class="card-body text-center">
+                        <h5>จำนวนทั้งหมด</h5>
+                        <h2>{{ total }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white h-100">
+                    <div class="card-body text-center">
+                        <h5>ซ่อมได้</h5>
+                        <h2>{{ fixable }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white h-100">
+                    <div class="card-body text-center">
+                        <h5>ซ่อมไม่ได้</h5>
+                        <h2>{{ unfixable }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark h-100">
+                    <div class="card-body text-center">
+                        <h6 class="mb-1">% เสีย (เทียบชิ้นงาน)
+                            <i class="bi bi-info-circle" data-bs-toggle="tooltip" data-bs-placement="top" title="คิดจากจำนวนซ่อมไม่ได้ หารด้วยจำนวนชิ้นงานทั้งหมดของอาคารที่เลือก"></i>
+                        </h6>
+                        <h2>{{ percent_unfixable_assets_display }}</h2>
+                        <small class="d-block">ซ่อมไม่ได้ ÷ จำนวนชิ้นงานทั้งหมด</small>
+                        <small>อิงจากจำนวนชิ้นงานทั้งหมด {{ total_items_sum }}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-secondary text-white h-100">
+                    <div class="card-body text-center">
+                        <h6 class="mb-1">% ซ่อมไม่ได้ (เทียบรายการ)
+                            <i class="bi bi-info-circle text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="คิดจากจำนวนซ่อมไม่ได้ หารด้วยจำนวนรายการแจ้งซ่อมทั้งหมดในช่วงที่เลือก"></i>
+                        </h6>
+                        <h2>{{ percent_unfixable_reports_display }}</h2>
+                        <small class="d-block">ซ่อมไม่ได้ ÷ จำนวนรายการแจ้งซ่อม</small>
+                        <small>อิงจากจำนวนรายการทั้งหมด {{ total }}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-dark h-100">
+                    <div class="card-body text-center">
+                        <h6 class="mb-1">เกณฑ์เป้าหมาย 5%</h6>
+                        <h2>{{ target_five_percent_items }}</h2>
+                        <small class="d-block">5% ของชิ้นงานทั้งหมด</small>
+                        <small>อิงจากจำนวนชิ้นงานทั้งหมด {{ total_items_sum }}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card {% if target_status == 'ผ่าน' %}bg-success{% else %}bg-danger{% endif %} text-white h-100">
+                    <div class="card-body text-center">
+                        <h6 class="mb-1">ผลเทียบเป้าหมาย 5%</h6>
+                        <h2>{{ target_status }}</h2>
+                        {% if target_status == 'ผ่าน' %}
+                        <small class="d-block">ต่ำกว่าเกณฑ์อยู่ {{ within_target_items }} ชิ้น</small>
+                        {% else %}
+                        <small class="d-block">เกินเกณฑ์อยู่ {{ over_target_items }} ชิ้น</small>
+                        {% endif %}
+                        <small>เสียจริง {{ unfixable }} ชิ้น / เกณฑ์ {{ target_five_percent_items }} ชิ้น</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark h-100">
+                    <div class="card-body text-center">
+                        <h6 class="mb-1">งานค้างซ่อมไม่ได้</h6>
+                        <h2>{{ open_jobs }}</h2>
+                        <small>เฉพาะงานที่สถานะแรกเป็นซ่อมไม่ได้และยังไม่ปิดงาน</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark h-100">
+                    <div class="card-body text-center">
+                        <h6 class="mb-1">ปิดงานแล้ว</h6>
+                        <h2>{{ closed_jobs }}</h2>
+                        <small>✘ → ✔ ซ่อมเสร็จ {{ closed_fixed }} / ✘ ปิดไม่ได้ {{ closed_unfixed }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if total > 0 %}
+        <div class="card mb-4">
+            <div class="card-body">
+                {% if building %}
+                <div class="row g-4 align-items-center">
+                    <div class="col-lg-7">
+                        <h6 class="text-muted mb-3">กราฟสรุปสำหรับอาคาร: {{ building }}</h6>
+                        <canvas id="chart"></canvas>
+                    </div>
+                    <div class="col-lg-5">
+                        <h6 class="text-muted mb-3">สัดส่วนผลการซ่อม</h6>
+                        <canvas id="pieChart"></canvas>
+                        <hr>
+                        <h6 class="text-muted mb-3 mt-3">สถานะงาน</h6>
+                        <canvas id="jobStatusChart"></canvas>
+                    </div>
+                </div>
+                {% else %}
+                <div class="row g-4 align-items-center">
+                    <div class="col-lg-8">
+                        <h6 class="text-muted mb-3">กราฟเปรียบเทียบแต่ละอาคาร</h6>
+                        <canvas id="chart"></canvas>
+                    </div>
+                    <div class="col-lg-4">
+                        <h6 class="text-muted mb-3">สถานะงาน</h6>
+                        <canvas id="jobStatusChart"></canvas>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-graph-up fs-1"></i>
+            <p class="mt-2">ไม่มีข้อมูลในช่วงที่เลือก</p>
+        </div>
+        {% endif %}
+
+        {% if report_prepared_by or report_approved_by %}
+        <div class="row mt-4 pt-3 border-top">
+            {% if report_prepared_by %}
+            <div class="col-md-6 text-center mb-3">
+                <div class="text-muted">ผู้จัดทำรายงาน</div>
+                <div style="height: 48px;"></div>
+                <div><strong>({{ report_prepared_by }})</strong></div>
+            </div>
+            {% endif %}
+            {% if report_approved_by %}
+            <div class="col-md-6 text-center mb-3">
+                <div class="text-muted">ผู้อนุมัติ/ผู้รับรอง</div>
+                <div style="height: 48px;"></div>
+                <div><strong>({{ report_approved_by }})</strong></div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<form method="post" action="{{ url_for('summary_report_pdf') }}" id="summaryPdfForm" class="d-none">
+    <input type="hidden" name="year" value="{{ year }}">
+    <input type="hidden" name="month" value="{{ month }}">
+    <input type="hidden" name="building" value="{{ building }}">
+    <input type="hidden" name="include_letterhead" value="{{ '1' if include_letterhead else '0' }}">
+    <input type="hidden" name="summary_job_status" value="{{ summary_job_status }}">
+    <input type="hidden" name="organization_name" value="{{ organization_name }}">
+    <input type="hidden" name="report_prepared_by" value="{{ report_prepared_by }}">
+    <input type="hidden" name="report_approved_by" value="{{ report_approved_by }}">
+    <input type="hidden" name="chart_image" id="chart_image_input">
+    <input type="hidden" name="pie_chart_image" id="pie_chart_image_input">
+</form>
+
+{% if total > 0 %}
+<script>
+    let mainChart;
+    let pieChart;
+    let jobStatusChart;
+    const ctx = document.getElementById('chart').getContext('2d');
+    const chartData = {{ chart_data | tojson | safe }};
+
+    const valueLabelPlugin = {
+        id: 'valueLabelPlugin',
+        afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+            ctx.save();
+            ctx.font = '12px sans-serif';
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+
+            chart.data.datasets.forEach((dataset, datasetIndex) => {
+                const meta = chart.getDatasetMeta(datasetIndex);
+                meta.data.forEach((bar, index) => {
+                    const value = dataset.data[index];
+                    if (value && value > 0) {
+                        ctx.fillText(value, bar.x, bar.y - 4);
+                    }
+                });
+            });
+
+            ctx.restore();
+        }
+    };
+
+    const isAllBuildingsView = {{ 'true' if not building else 'false' }};
+
+    mainChart = new Chart(ctx, {
+        type: 'bar',
+        data: chartData,
+        plugins: [valueLabelPlugin],
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        boxWidth: 12,
+                        usePointStyle: true,
+                        generateLabels(chart) {
+                            const defaultLabels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                            if (!isAllBuildingsView) return defaultLabels;
+
+                            const seen = new Set();
+                            return defaultLabels.filter(label => {
+                                const text = label.text.replace(' ✓', '').replace(' ✗', '');
+                                if (seen.has(text)) return false;
+                                seen.add(text);
+                                label.text = text;
+                                return true;
+                            });
+                        }
+                    },
+                    onClick(e, legendItem, legend) {
+                        const chart = legend.chart;
+                        if (!isAllBuildingsView) {
+                            Chart.defaults.plugins.legend.onClick(e, legendItem, legend);
+                            return;
+                        }
+
+                        const buildingName = legendItem.text;
+                        chart.data.datasets.forEach((dataset, index) => {
+                            if (dataset.label.startsWith(buildingName + ' ')) {
+                                const meta = chart.getDatasetMeta(index);
+                                meta.hidden = meta.hidden === null ? !chart.isDatasetVisible(index) : null;
+                            }
+                        });
+                        chart.update();
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        title(items) {
+                            return items[0]?.label || '';
+                        },
+                        label(context) {
+                            if (!isAllBuildingsView) {
+                                return `${context.dataset.label}: ${context.formattedValue}`;
+                            }
+
+                            const label = context.dataset.label || '';
+                            const value = context.raw || 0;
+                            if (label.endsWith('✓')) return `ซ่อมได้: ${value}`;
+                            if (label.endsWith('✗')) return `ซ่อมไม่ได้: ${value}`;
+                            return `${label}: ${value}`;
+                        },
+                        afterBody(items) {
+                            if (!isAllBuildingsView || !items.length) return '';
+                            const total = items.reduce((sum, item) => sum + (item.raw || 0), 0);
+                            return `รวมทั้งหมด: ${total}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        maxRotation: isAllBuildingsView ? 35 : 0,
+                        minRotation: isAllBuildingsView ? 35 : 0
+                    }
+                },
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    {% if building and total > 0 %}
+    const pieCtx = document.getElementById('pieChart').getContext('2d');
+    pieChart = new Chart(pieCtx, {
+        type: 'pie',
+        data: {
+            labels: ['ซ่อมได้', 'ซ่อมไม่ได้'],
+            datasets: [{
+                data: [{{ fixable }}, {{ unfixable }}],
+                backgroundColor: ['#4caf50', '#f44336']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    const jobStatusCtx = document.getElementById('jobStatusChart').getContext('2d');
+    jobStatusChart = new Chart(jobStatusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['งานค้างซ่อมไม่ได้', '✘ → ✔ ซ่อมเสร็จ', '✘ ปิดไม่ได้'],
+            datasets: [{
+                data: [{{ open_jobs }}, {{ closed_fixed }}, {{ closed_unfixed }}],
+                backgroundColor: ['#f0ad4e', '#f9a825', '#6c757d']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    function submitSummaryPdf() {
+        const chartInput = document.getElementById('chart_image_input');
+        const pieChartInput = document.getElementById('pie_chart_image_input');
+
+        if (mainChart) {
+            chartInput.value = mainChart.toBase64Image('image/png', 1.5);
+        }
+        if (pieChart) {
+            pieChartInput.value = pieChart.toBase64Image('image/png', 1.5);
+        }
+
+        document.getElementById('summaryPdfForm').submit();
+    }
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+        new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+</script>
+{% endif %}
+{% endblock %}

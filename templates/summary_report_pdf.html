@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="utf-8">
+    <title>สรุปรายงานงานซ่อม</title>
+    <style>
+        @page { size: A4; margin: 1.2cm; }
+        @font-face {
+            font-family: 'THSarabun';
+            src: url('file:///home/lenovo/.local/share/fonts/THSarabun.ttf') format('truetype');
+            font-weight: normal;
+        }
+        @font-face {
+            font-family: 'THSarabun';
+            src: url('file:///home/lenovo/.local/share/fonts/THSarabun Bold.ttf') format('truetype');
+            font-weight: bold;
+        }
+        body { font-family: 'THSarabun', 'Noto Sans Thai', sans-serif; font-size: 18px; color: #222; }
+        h1, h2, h3, strong { font-weight: bold; }
+        h1 { margin-bottom: 4px; text-align: center; }
+        .meta { margin-bottom: 16px; color: #555; text-align: center; }
+        .letterhead { text-align: center; margin-bottom: 18px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .letterhead .org { font-size: 28px; font-weight: bold; }
+        .cards { margin-bottom: 16px; }
+        .card { display: inline-block; width: 15.5%; margin-right: 0.7%; padding: 10px; border: 1px solid #ddd; box-sizing: border-box; border-radius: 8px; vertical-align: top; }
+        .card strong { display: block; font-size: 28px; margin-top: 6px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th, td { border: 1px solid #999; padding: 8px; text-align: left; vertical-align: top; }
+        th { background: #f0f0f0; }
+        .section-title { margin-top: 20px; margin-bottom: 8px; font-weight: bold; font-size: 22px; }
+        .signatures { margin-top: 36px; width: 100%; }
+        .signature-box { width: 45%; display: inline-block; text-align: center; vertical-align: top; }
+        .signature-space { height: 64px; }
+    </style>
+</head>
+<body>
+    {% if include_letterhead and organization_name %}
+    <div class="letterhead">
+        <div class="org">{{ organization_name }}</div>
+        <div>รายงานสรุปงานซ่อม</div>
+        <div>วันที่ {{ thai_generated_date }}</div>
+    </div>
+    {% else %}
+    <h1>สรุปรายงานงานซ่อม</h1>
+    <div class="meta">วันที่ {{ thai_generated_date }}</div>
+    {% endif %}
+
+    <div class="meta">
+        ปี: {{ year }} {% if month %}| เดือน: {{ month }}{% endif %} | อาคาร: {{ building if building else 'ทั้งหมด' }}
+    </div>
+
+    <div class="cards">
+        <div class="card">จำนวนทั้งหมด<strong>{{ total }}</strong></div>
+        <div class="card">ซ่อมได้<strong>{{ fixable }}</strong></div>
+        <div class="card">ซ่อมไม่ได้<strong>{{ unfixable }}</strong></div>
+        <div class="card">% เสีย (เทียบชิ้นงาน)<strong>{{ percent_unfixable_assets_display }}</strong></div>
+        <div class="card">% ซ่อมไม่ได้ (เทียบรายการ)<strong>{{ percent_unfixable_reports_display }}</strong></div>
+        <div class="card">เกณฑ์เป้าหมาย 5%<strong>{{ target_five_percent_items }}</strong></div>
+    </div>
+
+    <div class="section-title">สถานะงาน</div>
+    <table>
+        <thead>
+            <tr>
+                <th>หัวข้อ</th>
+                <th>ค่า</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>งานค้างซ่อมไม่ได้</td>
+                <td>{{ open_jobs }} รายการ</td>
+            </tr>
+            <tr>
+                <td>ปิดงานแล้ว (จากซ่อมไม่ได้)</td>
+                <td>{{ closed_jobs }} รายการ</td>
+            </tr>
+            <tr>
+                <td>ปิดงานแล้ว (ซ่อมเสร็จ)</td>
+                <td>{{ closed_fixed }} รายการ</td>
+            </tr>
+            <tr>
+                <td>ปิดงานแล้ว (ปิดไม่ได้)</td>
+                <td>{{ closed_unfixed }} รายการ</td>
+            </tr>
+        </tbody>
+    </table>
+
+    {% if chart_image or pie_chart_image %}
+    <div class="section-title">กราฟสรุปรายงาน</div>
+    <table style="width:100%; border:none; margin-top: 8px;">
+        <tr>
+            {% if chart_image and pie_chart_image %}
+            <td style="width:68%; border:none; padding: 0 8px 0 0; vertical-align: top;">
+                <img src="{{ chart_image }}" alt="Summary Chart" style="width: 100%; max-height: 420px; object-fit: contain;">
+            </td>
+            <td style="width:32%; border:none; padding: 0 0 0 8px; vertical-align: top; text-align:center;">
+                <img src="{{ pie_chart_image }}" alt="Pie Chart" style="width: 100%; max-height: 280px; object-fit: contain;">
+            </td>
+            {% elif chart_image %}
+            <td style="border:none; padding: 0; text-align:center;">
+                <img src="{{ chart_image }}" alt="Summary Chart" style="max-width: 100%; max-height: 420px; object-fit: contain;">
+            </td>
+            {% elif pie_chart_image %}
+            <td style="border:none; padding: 0; text-align:center;">
+                <img src="{{ pie_chart_image }}" alt="Pie Chart" style="max-width: 55%; max-height: 320px; object-fit: contain;">
+            </td>
+            {% endif %}
+        </tr>
+    </table>
+    {% endif %}
+
+    <div class="section-title">ผลเทียบเป้าหมาย 5%</div>
+    <table>
+        <thead>
+            <tr>
+                <th>หัวข้อ</th>
+                <th>ค่า</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>สถานะ</td>
+                <td>{{ target_status }}</td>
+            </tr>
+            <tr>
+                <td>ของเสียจริง</td>
+                <td>{{ unfixable }} ชิ้น</td>
+            </tr>
+            <tr>
+                <td>เกณฑ์ 5% ของชิ้นงานทั้งหมด</td>
+                <td>{{ target_five_percent_items }} ชิ้น</td>
+            </tr>
+            <tr>
+                <td>ผลต่างจากเกณฑ์</td>
+                <td>
+                    {% if target_status == 'ผ่าน' %}
+                        ต่ำกว่าเกณฑ์ {{ within_target_items }} ชิ้น
+                    {% else %}
+                        เกินเกณฑ์ {{ over_target_items }} ชิ้น
+                    {% endif %}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="section-title">ข้อมูลกราฟสรุป</div>
+    <table>
+        <thead>
+            <tr>
+                <th>หัวข้อ</th>
+                <th>ค่า</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for i in range(chart_data.labels|length) %}
+            <tr>
+                <td>{{ chart_data.labels[i] }}</td>
+                <td>
+                    {% for dataset in chart_data.datasets %}
+                        {{ dataset.label }}: {{ dataset.data[i] }}{% if not loop.last %} | {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if report_prepared_by or report_approved_by %}
+    <div class="signatures">
+        {% if report_prepared_by %}
+        <div class="signature-box">
+            <div>ผู้จัดทำรายงาน</div>
+            <div class="signature-space"></div>
+            <div>( {{ report_prepared_by }} )</div>
+        </div>
+        {% endif %}
+        {% if report_approved_by %}
+        <div class="signature-box" style="float: right;">
+            <div>ผู้อนุมัติ/ผู้รับรอง</div>
+            <div class="signature-space"></div>
+            <div>( {{ report_approved_by }} )</div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</body>
+</html>
