@@ -1,0 +1,8 @@
+Flask>=2.0
+SQLAlchemy>=2.0
+python-dotenv>=1.0
+pandas>=2.0
+openpyxl>=3.0
+WeasyPrint>=60.0
+fpdf2>=2.8
+gunicorn>=21.0
