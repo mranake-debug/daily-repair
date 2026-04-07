@@ -203,7 +203,7 @@ def add():
             building=selected_building.name,
             date=datetime.strptime(request.form['date'], '%Y-%m-%d').date(),
             item_name=request.form['item_name'],
-            quantity=1,
+            quantity=request.form.get('quantity', 1),
             zone=request.form['zone'],
             fault_desc=request.form['fault_desc'],
             status=initial_status,
